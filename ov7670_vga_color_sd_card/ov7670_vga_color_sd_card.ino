@@ -203,60 +203,7 @@ static const struct regval_list vga_ov7670[] PROGMEM = {
     {REG_VREF, 0x0a}, // VREF
     {0xff, 0xff},     /* END MARKER */
 };
-static const struct regval_list qvga_ov7670[] PROGMEM = {
-    {REG_COM14, 0x19},
-    {0x72, 0x11},
-    {0x73, 0xf1},
-    {REG_HSTART, 0x16},
-    {REG_HSTOP, 0x04},
-    {REG_HREF, 0x24},
-    {REG_VSTART, 0x02},
-    {REG_VSTOP, 0x7a},
-    {REG_VREF, 0x0a},
-    {0xff, 0xff}, /* END MARKER */
-};
-static const struct regval_list qqvga_ov7670[] PROGMEM = {
-    {REG_COM14, 0x1a}, // divide by 4
-    {0x72, 0x22},      // downsample by 4
-    {0x73, 0xf2},      // divide by 4
-    {REG_HSTART, 0x16},
-    {REG_HSTOP, 0x04},
-    {REG_HREF, 0xa4},
-    {REG_VSTART, 0x02},
-    {REG_VSTOP, 0x7a},
-    {REG_VREF, 0x0a},
-    {0xff, 0xff}, /* END MARKER */
-};
-static const struct regval_list yuv422_ov7670[] PROGMEM = {
-    {REG_COM7, 0x0}, /* Selects YUV mode */
-    {REG_RGB444, 0}, /* No RGB444 please */
-    {REG_COM1, 0},
-    {REG_COM15, COM15_R00FF},
-    {REG_COM9, 0x6A}, /* 128x gain ceiling; 0x8 is reserved bit */
-    {0x4f, 0x80},     /* "matrix coefficient 1" */
-    {0x50, 0x80},     /* "matrix coefficient 2" */
-    {0x51, 0},        /* vb */
-    {0x52, 0x22},     /* "matrix coefficient 4" */
-    {0x53, 0x5e},     /* "matrix coefficient 5" */
-    {0x54, 0x80},     /* "matrix coefficient 6" */
-    {REG_COM13, /*COM13_GAMMA|*/ COM13_UVSAT},
-    {0xff, 0xff}, /* END MARKER */
-};
-static const struct regval_list rgb565_ov7670[] PROGMEM = {
-    {REG_COM7, COM7_RGB}, /* Selects RGB mode */
-    {REG_RGB444, 0},      /* No RGB444 please */
-    {REG_COM1, 0x0},
-    {REG_COM15, COM15_RGB565 | COM15_R00FF},
-    {REG_COM9, 0x6A}, /* 128x gain ceiling; 0x8 is reserved bit */
-    {0x4f, 0xb3},     /* "matrix coefficient 1" */
-    {0x50, 0xb3},     /* "matrix coefficient 2" */
-    {0x51, 0},        /* vb */
-    {0x52, 0x3d},     /* "matrix coefficient 4" */
-    {0x53, 0xa7},     /* "matrix coefficient 5" */
-    {0x54, 0xe4},     /* "matrix coefficient 6" */
-    {REG_COM13, /*COM13_GAMMA|*/ COM13_UVSAT},
-    {0xff, 0xff}, /* END MARKER */
-};
+
 /*RAW NONPROCESSED BAYER*/
 static const struct regval_list bayerRGB_ov7670[] PROGMEM = {
     {REG_COM7, COM7_BAYER},
@@ -530,41 +477,13 @@ static void wrSensorRegs8_8(const struct regval_list reglist[])
 }
 void setColorSpace(enum COLORSPACE color)
 {
-    switch (color)
-    {
-    case YUV422:
-        wrSensorRegs8_8(yuv422_ov7670);
-        break;
-    case RGB565:
-        wrSensorRegs8_8(rgb565_ov7670);
-        {
-            uint8_t temp = rdReg(0x11);
-            _delay_ms(1);
-            wrReg(0x11, temp);
-        } //according to the Linux kernel driver rgb565 PCLK needs rewriting
-        break;
-    case BAYER_RGB:
-        wrSensorRegs8_8(bayerRGB_ov7670);
-        break;
-    }
+
+    wrSensorRegs8_8(bayerRGB_ov7670);
 }
 void setRes(enum RESOLUTION res)
 {
-    switch (res)
-    {
-    case VGA:
-        wrReg(REG_COM3, 0); // REG_COM3
-        wrSensorRegs8_8(vga_ov7670);
-        break;
-    case QVGA:
-        wrReg(REG_COM3, 4); // REG_COM3 enable scaling
-        wrSensorRegs8_8(qvga_ov7670);
-        break;
-    case QQVGA:
-        wrReg(REG_COM3, 4); // REG_COM3 enable scaling
-        wrSensorRegs8_8(qqvga_ov7670);
-        break;
-    }
+    wrReg(REG_COM3, 0); // REG_COM3
+    wrSensorRegs8_8(vga_ov7670);
 }
 void camInit(void)
 {
@@ -576,29 +495,6 @@ void camInit(void)
 
 /*main.c*/
 
-/* Configuration: this lets you easily change between different resolutions
- * You must only uncomment one
- * no more no less*/
-#define useVga
-//#define useQvga
-//#define useQqvga
-
-/* static inline void serialWrB(uint8_t dat)
-{
-    while (!(UCSR0A & (1 << UDRE0)))
-        ; //wait for byte to transmit
-    UDR0 = dat;
-    while (!(UCSR0A & (1 << UDRE0)))
-        ; //wait for byte to transmit
-}
-static void StringPgm(const char *str)
-{
-    do
-    {
-        serialWrB(pgm_read_byte_near(str));
-    } while (pgm_read_byte_near(++str));
-}
- */
 /*
 I did not know this, since I am a newbie so I added some info
   https://www.arduino.cc/en/Reference/PortManipulation
@@ -670,310 +566,103 @@ static void captureImg(uint16_t wg, uint16_t hg)
 {
     uint16_t lg2;
     uint32_t bgnBlock, endBlock;
-#ifdef useQvga
-    uint8_t buf[640];
-#elif defined(useQqvga)
-    uint8_t buf[320];
-#endif
+    uint8_t isBadImage = 0;
 
-    //Wait for vsync it is on pin 3 (counting from 0) portD
-    //*RDY* is the bitsequence that lets the java end know when an image starts.
-    /* StringPgm(PSTR("*RDY*")); */
-    Serial.print(F("new img "));
-    Serial.flush();
+    //pconly Serial.print(F("new img "));
+    //pconly Serial.flush();
     //        D3=VSYNC
-    const String filename = "imgqvgas" + String(picturecount++) + ".bin";
+    String filename = F("img");
+    filename.concat(picturecount++);
+    filename.concat(F(".bin"));
 
     SD.remove(filename.c_str());
 
     //file = SD.open(filename, O_CREAT | FILE_WRITE);
     file.createContiguous(filename.c_str(), 512UL * hg);
     file.contiguousRange(&bgnBlock, &endBlock);
-    //File file = SD.open(filename); //, O_CREAT | O_TRUNC); //, O_CREAT | O_TRUNC
-    // picturecount++;
-    // unsigned long startMillis;
-    // unsigned long startMicros;
 
+    //Wait for vsync it is on pin 3 (counting from 0) portD
     while (!(PIND & 8))
+
         ; //wait for high
     while ((PIND & 8))
         ; //wait for low
 
-    /*              Type any character to start
-File size 5MB
-Buffer size 100 bytes
-Starting write test.  Please wait up to a minute
-Write 96.33 KB/sec
-Maximum latency: 174084 usec, Minimum Latency: 96 usec, Avg Latency: 1032 usec
-
-Starting read test.  Please wait up to a minute
-Read 176.95 KB/sec
-Maximum latency: 5332 usec, Minimum Latency: 92 usec, Avg Latency: 558 usec
-
-                
-                
-                */
-    // startMillis = millis();
-    // uint32_t totalLatency = 0;
-    // uint32_t minLatency = 999999;
-    // uint32_t maxLatency = 0;
-    // uint32_t m;
-    // byte a;
     uint16_t BUFFER_SIZE = 512;
 
-#ifdef useVga
     uint8_t *pCache = (uint8_t *)SD.vol()->cacheClear();
     SD.card()->writeStart(bgnBlock, hg);
     while (hg--)
     {
         lg2 = wg;
-        // byte dataBuffer[BUFFER_SIZE];
 
         uint16_t count = 0;
-        // startMicros = millis();
-        //href
+
         if (hg != 479)
         {
+            //href
             while ((PINB & 1))
-                ;
+                ; //wait for low
             while (!(PINB & 1))
-                ;
+            {
+                if ((PIND & 8))
+                    isBadImage = 1;
+            }; //wait for high
         }
 
         while (lg2--)
         { //      D2= PCLK
-            // uint32_t a = micros();
-            //4, qvga 886692
             while ((PIND & 4))
 
                 ;
-            // Serial.print(micros() - a);
-            // Serial.print("\n");
-            // m = micros();
 
-            // a = (PINC & 15) | (PIND & 240);
-            // byte a = (PINC & 15) | (PIND & 240);
-            //dataBuffer[count++] = (PINC & 15) | (PIND & 240);
-            //dataFile.write((uint8_t *)((PINC & 15) | (PIND & 240)), (size_t)1);
-            // dataBuffer[639 - lg2] = (PINC & 15) | (PIND & 240);
-            // Serial.println((PINC & 15) | (PIND & 240));
-            //wait for low
-            //ino pins: A3-A0  |   D7-D4
-            //  00001111 = 15 11110000 = 240
-            //    UDR0 = (PINC & 15) | (PIND & 240);
             if (count < BUFFER_SIZE)
-                //dataBuffer[count++] = (PINC & 15) | (PIND & 240);
                 pCache[count++] = (PINC & 15) | (PIND & 240);
             else
                 break;
-            //file.write((uint8_t *)((PINC & 15) | (PIND & 240)), (size_t)1);
             while (!(PIND & 4))
-
-                ; //wait for high
-
-            // m = micros() - m;
-
-            // if (maxLatency < m)
-            //     maxLatency = m;
-            // if (minLatency > m)
-            //     minLatency = m;
-            // totalLatency += m;
-
-            //     dataFile.write(dataBuffer, 320);
-            // }
+                ;
         }
         SD.card()->writeData(pCache);
-        // file.write(dataBuffer, (size_t)BUFFER_SIZE);
-        //file.flush();
-        // if (count == BUFFER_SIZE)
-        // {
-
-        //     //2384
-        //     //17948
-
-        //     //192 microsecs qvga
-        //     //2596 or microcrosecs qvga
-        // }
-        //572112 µs first row with 0x11 = 31 and OCR1A = 2, row on average ~ 20µs min 16,max24;
-        //381408 µs first row with 0x11 = 31 and OCR1A = 1, row on average ~ 14µs min 8,max16; many 12
-        //190704 µs first row with 0x11 = 31 and OCR1A = 0, row on average ~ 6µs min 4,max12; many 4
-
-        //cam high+low px takes 15.625 µs with 0x11=31 OCR1A = 0;
-        // after high till low takes 8µs , max 12µs
-        //after till low with portread = 8µs too max 12µs
-
-        // Serial.print(millis() - startMicros);
-
-        // Serial.flush();
-
-        // dataFile.write(dataBuffer, 640);
+        pCache = (uint8_t *)SD.vol()->cacheClear();
     }
-    //file.flush();
+
     SD.card()->writeStop();
-    file.close();
-    _delay_ms(50);
-    // Serial.print("\n");
-    // for (int i = 0; i < 50; i++)
-    // {
-    //     Serial.print(times[i]);
-    //     Serial.print(" ");
-    //     Serial.flush();
-    // }
-
-    // Serial.println(" ");
-    // Serial.print(F("tt "));
-    // Serial.print(totalLatency);
-    // Serial.print(F(" min "));
-    // Serial.print(minLatency);
-    // Serial.print(F(" max "));
-    // Serial.print(maxLatency);
-    // Serial.print(F(" avrg "));
-    // Serial.println(totalLatency / (480 * 640));
-
-    // Serial.print("\n");
-    // Serial.flush();
-
-    // dataFile.close();
-
-#elif defined(useQvga)
-
-    int h, w;
-    h = 240;
-    while (h--)
+    if (isBadImage)
     {
-        w = 320;
-        byte dataBuffer[320];
-        uint32_t a = micros();
-        //886692
-
-        while (w--)
-        {
-
-            while ((PIND & 4))
-                ; //wait for low
-            Serial.println(micros() - a);
-            dataBuffer[319 - w] = (PINC & 15) | (PIND & 240);
-            while (!(PIND & 4))
-                ; //wait for high
-            while ((PIND & 4))
-                ; //wait for low
-            while (!(PIND & 4))
-                ; //wait for high
-        }
-
-        //192 microsecs
-        //2596 or microcrosecs
-
-        //file.write(dataBuffer, 320);
+        filename.concat(F(".isBad"));
+        file.rename(filename.c_str());
     }
-    file.flush();
+
     file.close();
 
-    // //We send half of the line while reading then half later
-    // while (hg--)
-    // {
-    //     lg2 = wg;
-    //     //href
-    //     /*  while ((PIND & 256));  */
-    //     //wait for high
-    //     while (lg2--)
-    //     {
-
-    //         //      D2= PCLK
-    //         while ((PIND & 4))
-    //             ; //wait for low
-    //         UDR0 = (PINC & 15) | (PIND & 240);
-
-    //         /* StringPgm(PSTR("00")); */
-    //         while (!(UCSR0A & (1 << UDRE0)))
-    //             ; //wait for byte to transmit
-    //         //      D2= PCLK
-    //         while (!(PIND & 4))
-    //             ; //wait for high
-    //         while ((PIND & 4))
-    //             ; //wait for low
-    //         while (!(PIND & 4))
-    //             ;
-    //         //wait for high
-    //         // ^ this is only taking every second byte, starting with the first
-    //     }
-    //     /*   while (!(PIND & 256))
-    //         ; */
-    // }
-#else
-    // This code is very similar to qvga sending code except we have even more blanking time to take advantage of
-    while (hg--)
-    {
-        uint8_t *b = buf, *b2 = buf;
-        lg2 = wg / 5;
-        while (lg2--)
-        {
-            while ((PIND & 4))
-                ; //wait for low
-            *b++ = (PINC & 15) | (PIND & 240);
-            while (!(PIND & 4))
-                ; //wait for high
-            while ((PIND & 4))
-                ; //wait for low
-            *b++ = (PINC & 15) | (PIND & 240);
-            while (!(PIND & 4))
-                ; //wait for high
-            while ((PIND & 4))
-                ; //wait for low
-            *b++ = (PINC & 15) | (PIND & 240);
-            while (!(PIND & 4))
-                ; //wait for high
-            while ((PIND & 4))
-                ; //wait for low
-            *b++ = (PINC & 15) | (PIND & 240);
-            while (!(PIND & 4))
-                ; //wait for high
-            while ((PIND & 4))
-                ; //wait for low
-            *b++ = (PINC & 15) | (PIND & 240);
-            UDR0 = *b2++;
-            while (!(PIND & 4))
-                ; //wait for high
-        }
-        // Finish sending the remainder during blanking
-        lg2 = 320 - (wg / 5);
-        while (!(UCSR0A & (1 << UDRE0)))
-            ; //wait for byte to transmit
-        while (lg2--)
-        {
-            UDR0 = *b2++;
-            while (!(UCSR0A & (1 << UDRE0)))
-                ; //wait for byte to transmit
-        }
-    }
-#endif
-    Serial.print(F("finished\n"));
-    Serial.flush();
+    //pconly Serial.print(F("finished\n"));
+    //pconly Serial.flush();
 }
 /* int i = 1; */
 
-const byte CS_Pin = 10;
+const uint8_t CS_Pin = 10;
 void setup()
 {
     // SD setup
-    Serial.begin(9600);
+    //pconly Serial.begin(9600);
 
     pinMode(CS_Pin, OUTPUT);
     if (SD.begin(CS_Pin, SD_SCK_MHZ(50)))
     {
-        Serial.println(F("SD Card init successful"));
-        Serial.flush();
+        //pconly Serial.println(F("SD Card init successful"));
+        //pconly Serial.flush();
     }
     else
     {
-        Serial.println(F("SD Card init failed"));
-        Serial.flush();
+        //pconly Serial.println(F("SD Card init failed"));
+        //pconly Serial.flush();
     }
 
     // if (!SD.begin(CS_Pin))
     // {
-    //     Serial.println(F("Impossible to initialize..."));
-    //     Serial.println(F("Check for sd card and press RESET"));
+    //     //pconly Serial.println(F("Impossible to initialize..."));
+    //     //pconly Serial.println(F("Check for sd card and press RESET"));
     //     for (;;)
     //         ; // boucle infinie (wait for RESET)
     // }
@@ -1005,7 +694,7 @@ void setup()
     TWSR &= ~3; //disable prescaler for TWI
     TWBR = 72;  //set to 100khz
 
-    //enable serial
+    //enable //pconly Serial
     //only when sending data to pc
     /*   UBRR0H = 0;
     UBRR0L = 1;                           //0 = 2M baud rate. 1 = 1M baud. 3 = 0.5M. 7 = 250k 207 is 9600 baud rate.
@@ -1016,56 +705,22 @@ void setup()
 
     camInit();
     //sei(); //enable interrupts: on if you want to measure millis()  or micros() else turn off
-#ifdef useVga
+
     setRes(VGA);
     setColorSpace(BAYER_RGB);
     wrReg(0x11, 0x1F); //original:    wrReg(0x11, 25); //max: 0x1F //change to adjust speed/ speed can be tradeof for data corruption, below 30 for me
-
-#elif defined(useQvga)
-    setRes(QVGA);
-    setColorSpace(YUV422);
-    wrReg(0x11, 13);          //amos: 9-13 change if there are glitches in img
-#else
-    setRes(QQVGA);
-    setColorSpace(YUV422);
-    wrReg(0x11, 3);
-#endif
+    //blinking led
+    //pinMode(LED_BUILTIN, OUTPUT);
 }
 void loop()
 {
 
-#ifdef useVga
     // unsigned long sparetime = millis();
     captureImg(640, 480); //1 byte per pix
-
-    // Serial.print("\nspare ");
-    // Serial.print(millis() - sparetime);
-    // Serial.print("\n");
-    // Serial.flush();
-#elif defined(useQvga)
-    captureImg(320 * 2, 240); //two bytes per pix somewhat, YU YV YU YV -> px1 = Y1 U0 V0, px2 = Y2 U0 V0
-#else
-    captureImg(160 * 2, 120);
-#endif
+    // digitalWrite(LED_BUILTIN, HIGH); // turn the LED on
+    // delay(100);                      // wait for half a second
+    // digitalWrite(LED_BUILTIN, LOW);
 }
 
-/*
-experimenting with wrReg(0x11, variable); and OCR1A = variable; 
-
-wrReg | OCR1A
-
-spare | wholepic | firstRow | row  //(t in: ms | ms | ms | ms)
-
-31 0 
-12380 9297 194 12
-
-20 0 
-8379 6888 133 8
-
-30 1
-12381 12034 389 21
-
-20 1
-16779 9967 264 16
-
-*/
+//Der Sketch verwendet 13754 Bytes (42%) des Programmspeicherplatzes. Das Maximum sind 32256 Bytes.
+// Globale Variablen verwenden 857 Bytes (41%) des dynamischen Speichers, 1191 Bytes für lokale Variablen verbleiben. Das Maximum sind 2048

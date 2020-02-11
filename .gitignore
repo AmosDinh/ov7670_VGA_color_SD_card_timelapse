@@ -1,2 +1,7 @@
 code/
-sd_bench/
+!*/requiredlibs.txt
+!code/SimpleRead.java
+!code/SimpleRead.class
+!code/img_to_mp4.java
+!code/img_to_mp4.class
+benchSD/
