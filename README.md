@@ -24,6 +24,12 @@
  - Camera Module does not allow slower speed than 0.133 Hertz but you can skip images by yourself
  - (Picture cut of): SD card write speed is too slow, therefore I only collect 512 pxdata per row, and save to SD in the remaining time of the 128 px: <br> Pictures will be distorted sometimes, if it takes 12 seconds to save(because two pics overlap)) Therefore image is 512*420 px; .
 
+### Example :
+Quality is a bit better as .mp4, rather than this .gif
+![](second_timelapse.gif)
 
-
-
+### Cool glitch photos in the process:
+![](0_t19_11_17_isZero_3682.jpg)
+![](0_t18_8_35_isZero_100806.jpg)
+![](0_t19_11_17_isZero_3682.jpg)
+![](0_t15_14_6_isZero_0.jpg)
