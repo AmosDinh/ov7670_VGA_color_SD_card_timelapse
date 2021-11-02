@@ -18,22 +18,24 @@ import com.xuggle.xuggler.ICodec;
 public class img_to_mp4 {
 
     private static Dimension screenBounds;
-    public static int indexVideo = 0;
-    private static final double FRAME_RATE = 30;
+    public static int indexVideo = 0; // milliseconds/framerate
+    private static final double FRAME_RATE = 1000 / 180;
 
-    private static final int SECONDS_TO_RUN_FOR = 20;
-    private static final String OUTPUT_FILE = "C:/Users/Amos/Documents/Programmieren/arduino/ov7670_vga_color/ov7670_vga_color_sd_card/code/mp4IMG/firsttimelapse.mp4";
+    // private static final int SECONDS_TO_RUN_FOR = 20;
+    private static final String OUTPUT_FILE = "C:/Users/Amos/Documents/Programmieren/arduino/ov7670_vga_color/ov7670_vga_color_sd_card/code/mp4IMG/second_timelapse.mp4";
 
     public static void main(String[] arguments) {
         final IMediaWriter writer = ToolFactory.makeWriter(OUTPUT_FILE);
-        screenBounds = Toolkit.getDefaultToolkit().getScreenSize();
-        writer.addVideoStream(0, 0, ICodec.ID.CODEC_ID_MPEG4, screenBounds.width / 2, screenBounds.height / 2);
+        // screenBounds = Toolkit.getDefaultToolkit().getScreenSize();
+
+        writer.addVideoStream(0, 0, ICodec.ID.CODEC_ID_MPEG4, /* screenBounds.width / 2 */480,
+                /* screenBounds.height / 2 */ 512);
         long startTime = System.nanoTime();
         int[] excludeframes = new int[] { 21, 39, 50, 70, 81, 86, 91, 102, 129, 139, 145, 150, 155, 161, 166, 171, 177,
                 180, 182, 187, 193, 198, 203, 209, 214, 219, 225, 230, 235, 241, 246, 251, 257, 262, 267, 273, 278, 283,
                 289 };
 
-        for (int index = 0; index < 300; index++) {
+        for (int index = 0; index < 1163; index++) {
             for (int i = 0; i < excludeframes.length; i++)
                 if (excludeframes[i] == index)
                     continue;
@@ -47,7 +49,7 @@ public class img_to_mp4 {
             writer.encodeVideo(0, bgrScreen, System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
             // sleep for frame rate milliseconds
             try {
-                Thread.sleep((long) (100));
+                Thread.sleep((long) (FRAME_RATE));
             } catch (InterruptedException e) {
                 // ignore
             }
@@ -56,10 +58,10 @@ public class img_to_mp4 {
     }
 
     private static BufferedImage getVideoImage() {
-
+        // imgN1162_20200212T180007
         File imgLoc = new File(
-                "C:/Users/Amos/Documents/Programmieren/arduino/ov7670_vga_color/ov7670_vga_color_sd_card/code/pngIMG/img"
-                        + indexVideo + ".png");
+                "C:/Users/Amos/Documents/Programmieren/arduino/ov7670_vga_color/ov7670_vga_color_sd_card/code/pngIMG/imgN"
+                        + indexVideo + "_20200212T180007.png");
         BufferedImage img = null;
         try {
             img = ImageIO.read(imgLoc);

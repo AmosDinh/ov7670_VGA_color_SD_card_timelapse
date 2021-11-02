@@ -66,8 +66,9 @@ public class SimpleRead {
 
 		String timestamp = year + month + day + "T" + hour + minute + second;
 		int count = 0;
+		String foldername = "code/binIMG/a1";
 
-		final File folder = new File("code/binIMG");
+		final File folder = new File(foldername);
 		ArrayList<String> filenames = listFilesForFolder(folder);
 		int[] range = new int[] { 0, filenames.size() };
 		filenames = sortByIndex("img", ".bin", range, filenames);
@@ -78,7 +79,7 @@ public class SimpleRead {
 			int isZero = 0;
 			// number of isZeros in img tells alot about how much it is corrupted
 
-			final byte[] byteArray = Files.readAllBytes(Paths.get("code/binIMG/" + fname));
+			final byte[] byteArray = Files.readAllBytes(Paths.get(foldername + "/" + fname));
 
 			ByteArrayInputStream byteStream = new ByteArrayInputStream(byteArray);
 			// 512 -> // 480 // | // V
@@ -192,7 +193,7 @@ public class SimpleRead {
 			File outputFile = new File("code/pngIMG/imgN" + (count++) + "_" + timestamp + ".png");
 			ImageIO.write(image, "png", outputFile);
 
-			System.out.println("ZERO: " + isZero);
+			System.out.println("SAVED: "+count);
 
 			// try {
 			// BufferedImage img = ImageIO.read(new
