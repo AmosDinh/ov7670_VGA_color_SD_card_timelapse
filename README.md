@@ -30,6 +30,6 @@ Quality is a bit better as .mp4, rather than this .gif
 
 ### Cool glitch photos in the process:
 ![](0_t19_11_17_isZero_3682.jpg)
-![](0_t18_8_35_isZero_100806.jpg)
-![](0_t19_11_17_isZero_3682.jpg)
 ![](0_t15_14_6_isZero_0.jpg)
+![](0_t18_8_35_isZero_100806.jpg)
+![](0_t15_46_43_isZero_0.jpg)
